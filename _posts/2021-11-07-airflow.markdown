@@ -1,0 +1,86 @@
+---
+layout: post
+title: Orchestrating Multi Scraper Using Airflow
+date: 2021-11-07 10:00:00 +0700
+---
+This project contains multiple web scrapers.
+The purpose of these scrapers is to gather data from various comic and novel websites.
+The data is the comic/novel itself and its contents.
+The database used in this project is Postgresql.
+
+Here is the screenshot of the DAG list.
+
+![DAG list](/assets/img/dag-list.jpg)
+
+Let me show you one of the DAG.
+I will use watcher_latest_comic DAG as an example.
+
+![DAG list](/assets/img/watcher_latest_comic-tree.jpg)
+
+Here is a snippet of one of the task codes.
+
+{% highlight ruby %}
+def download_chapter_116(chapter_ids):
+    for id_ in chapter_ids:
+        assert isinstance(id_, int)
+        requests.get(
+            f"http://***.***.***.***:**/download/chapter/{id_}",
+            header={"Authorization": ***},
+        )
+{% endhighlight %}
+
+The code above made requests to a download API.
+
+More about this download API is below.
+
+There is two core function here.
+Let's call the first one Download_func and the second one Split_func.
+
+Download_func purpose is to download and save the image.
+Here is a snippet of Download_func's code.
+
+{% highlight ruby %}
+response = requests.get(url, stream=True, headers=headers)
+if response.status_code == 200:            
+    try:
+        i = Image.open(BytesIO(response.content))
+        if i.size[0] * i.size[0] < 10:
+            raise HTTPException(status_code=403, detail="image too small")
+        i = i.convert("RGB")
+        i_w, i_h = i.size
+
+        logger.info(f' @@@=== SAVE STARTING {save_path} ===@@@')
+        i.save(save_path)
+        logger.info(f' @@@=== SAVE EXECUTED {save_path} ===@@@')
+
+        img = Image_(url_from=base_url, file_path=save_path, width=i_w, height=i_h, status=True)
+
+        return json.dumps(img.data_dict())
+{% endhighlight %}
+
+Split_func purpose is to split long images into multiple images. By long, I mean the image has to be at least 1000 pixels in height.
+Here is a snippet of Split_func's code.
+
+{% highlight ruby %}
+if REMAINDER + MIN_H >= 1000:
+    img_700px_height_counts = floor(I_H / MIN_H - 1)
+    img_remainder_counts = 2
+    min_h_remainder = floor((REMAINDER + MIN_H) / 2)
+else:
+    img_700px_height_counts = floor(I_H / MIN_H - 1)
+    img_remainder_counts = 1
+
+last_bottom = 0
+left = 0
+right = I_W
+
+# list image 700px
+logger.info(f'@@@ img_700px_height_counts: {img_700px_height_counts}')
+for v in range(img_700px_height_counts):
+    top = v * MIN_H
+    bottom = top + MIN_H
+    area = (left, top, right, bottom)
+    last_bottom = bottom
+    cropped_i = i.crop(area)
+    i_list.append(cropped_i)
+{% endhighlight %}
