@@ -1,0 +1,12 @@
+---
+layout: post
+title: Data Visualization Using Power BI
+date: 2021-11-07 10:00:00 +0700
+---
+Last time I created a data visualization using Google Data Studio.
+This time I created a data visualization using Power BI.
+The dataset that I used here, I get it from scraping tokopedia's API using http request.
+
+Here is a screenshot of it.
+
+![google-datastudio](/assets/img/tokopedia-power-bi.png)
